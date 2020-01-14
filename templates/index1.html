@@ -19,20 +19,18 @@
   <script>
 
   // open a connections to Channels
-  var pusher = new Pusher('9d5365f81a0e2a336b50', {
-      authEndpoint: '/pusher/auth',
-      cluster: 'us2',
-      encrypted: true,
+  //var pusher = new Pusher('9d5365f81a0e2a336b50', {
+  //    authEndpoint: '/pusher/auth',
+  //    cluster: 'us2',
+      //encrypted: true,
   //    forceTLS: true,
   });
   // subscribe to the my-channel channel
   var channel = pusher.subscribe('private-Lily')
   // bind a function the event name
-
-
-  //channel.bind('client-valueUpdate', function(data) {
-  //    d3.select('h2').text(data.value)
-  //});
+  channel.bind('client-valueUpdate', function(data) {
+      d3.select('h2').text(data.value)
+  });
 
   // https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
   let margin = {top: 20, right: 50, bottom: 20, left: 130},
@@ -146,8 +144,9 @@
       //d3.select('h2').text('NO MATCH')
       channel.bind('pusher:subscription_succeeded', function() {
           alert('subscription registered with private channel')
-          channel.trigger('client-updateValue', {'value': slider1.value()})
+      //    channel.trigger('client-updateValue', {'value': slider1.value()})
       });
+      channel.trigger('client-updateValue', {'value': slider1.value()})
       d3.select('.top').attr('opacity', 0)
       d3.selectAll('.parameter-value path').attr('fill', 'white')
     }

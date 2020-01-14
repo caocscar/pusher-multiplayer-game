@@ -13,15 +13,9 @@ pusher = pusher_client = pusher.Pusher(
 
 name = ''
 
-@app.route('/')
+@app.route('/index1')
 def index():
-    return render_template('index.html')
-
-@app.route('/play')
-def play():
-    global name
-    name = request.args.get('username')
-    return render_template('play.html')
+    return render_template('index1.html')
 
 @app.route("/pusher/auth", methods=['POST'])
 def pusher_authentication():
@@ -36,6 +30,6 @@ def pusher_authentication():
     return json.dumps(auth)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True)
 
 name = ''
