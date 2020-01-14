@@ -19,16 +19,16 @@
   <script>
 
   // open a connections to Channels
-  //var pusher = new Pusher('9d5365f81a0e2a336b50', {
-  //    authEndpoint: '/pusher/auth',
-  //    cluster: 'us2',
+  var pusher = new Pusher('9d5365f81a0e2a336b50', {
+      authEndpoint: '/pusher/auth',
+      cluster: 'us2',
       //encrypted: true,
   //    forceTLS: true,
   });
   // subscribe to the my-channel channel
   var channel = pusher.subscribe('private-Lily')
   // bind a function the event name
-  channel.bind('client-valueUpdate', function(data) {
+  channel.bind('client-updateValue', function(data) {
       d3.select('h2').text(data.value)
   });
 

@@ -3,7 +3,7 @@ from pusher import pusher
 
 app = Flask(__name__)
 
-pusher = pusher_client = pusher.Pusher(
+pusher = pusher.Pusher(
     app_id = '928597',
     key = '9d5365f81a0e2a336b50',
     secret = '765aaf248e0ed58ccc1f',
@@ -13,9 +13,9 @@ pusher = pusher_client = pusher.Pusher(
 
 name = ''
 
-@app.route('/index1')
+@app.route('/')
 def index():
-    return render_template('index1.html')
+    return render_template('index.html')
 
 @app.route("/pusher/auth", methods=['POST'])
 def pusher_authentication():
