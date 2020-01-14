@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="Alex Cao">
-    <title>Player 1 - Pusher Test</title>
+    <title>Two-Player Bargaining Test</title>
     <script src="https://js.pusher.com/5.0/pusher.min.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://unpkg.com/d3-simple-slider"></script>
@@ -22,14 +22,17 @@
   var pusher = new Pusher('9d5365f81a0e2a336b50', {
       authEndpoint: '/pusher/auth',
       cluster: 'us2',
-      //encrypted: true,
-  //    forceTLS: true,
+      forceTLS: true,
   });
   // subscribe to the my-channel channel
   var channel = pusher.subscribe('private-Lily')
+  channel.bind('pusher:subscription_succeeded', function() {
+      console.log('subscription registered with private channel')
+  });
   // bind a function the event name
   channel.bind('client-updateValue', function(data) {
-      d3.select('h2').text(data.value)
+      d3.select('#value2').text(numFormat(data.value))
+      slider2.silentValue(data.value)
   });
 
   // https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
@@ -59,6 +62,7 @@
   const data = d3.range(6)
   const h = 12 // pixels
   const numFormat = d3.format('$.2f')
+  const timeFormat = d3.format('.1f')
 
   // Tale of two sliders
   let X = d3.scaleLinear()
@@ -70,7 +74,7 @@
       .tickValues(tickValues)
       .step(stepSize)
       .handle(symbol) 
-      .default(2)
+      .default(Math.floor(Math.random()*10)/2)
       .fill('#a1d99b')
       .on('onchange', d => d3.select('#value1').text(numFormat(d)));
       
@@ -80,7 +84,6 @@
       .tickValues(tickValues)
       .step(stepSize)
       .handle(symbol)
-      .default(4)
       .fill('#31a354')
       .on('onchange', d => d3.select('#value2').text(numFormat(d)));
 
@@ -97,6 +100,7 @@
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
       .attr('class', 'bottom')
+      .attr('pointer-events', 'none')
     .append("g")
       .attr("transform", `translate(${margin.left},${margin.top+height/2})`)
       .attr('id', 's2')
@@ -107,7 +111,7 @@
       .attr('class', 'player')
       .attr('x', -80)
       .attr('y', 0.33*h)
-      .text('Player 1')
+      .text('You')
   P1.append('text')
       .attr('id', 'value1')
       .attr('x', -80)
@@ -118,7 +122,7 @@
       .attr('class', 'player')
       .attr('x', -80)
       .attr('y', 0.33*h)
-      .text('Player 2')
+      .text('Opponent')
   P2.append('text')
       .attr('id', 'value2')
       .attr('x', -80)
@@ -133,24 +137,28 @@
       .attr('stroke-width', h-2)
 
   // check for a match
+  let T = 0
+  let t0 = new Date
   let check4Match = setInterval(function() {
-    if (slider1.value() == slider2.value()) {
-      d3.select('h2').text('PEEK-A-BOO')
-      d3.select('.top').attr('opacity', 0.5)
-      x2 = parseInt(d3.select('.track-fill').attr('x2'))
-      d3.select('.top').attr('x', xoffset+x2)
-      d3.selectAll('.parameter-value path').attr('fill', '#2719C7')
-    } else {
-      //d3.select('h2').text('NO MATCH')
-      channel.bind('pusher:subscription_succeeded', function() {
-          alert('subscription registered with private channel')
-      //    channel.trigger('client-updateValue', {'value': slider1.value()})
-      });
+      t1 = new Date
       channel.trigger('client-updateValue', {'value': slider1.value()})
-      d3.select('.top').attr('opacity', 0)
-      d3.selectAll('.parameter-value path').attr('fill', 'white')
-    }
+      if (slider1.value() == slider2.value()) {
+          d3.select('h2').text(`PEEK-A-BOO (${timeFormat((t1-t0)/1000)}s)`)
+          d3.select('.top').attr('opacity', 0.5)
+          x2 = parseInt(d3.select('.track-fill').attr('x2'))
+          d3.select('.top').attr('x', xoffset+x2)
+          d3.selectAll('.parameter-value path').attr('fill', '#2719C7')
+      } else {
+          d3.select('h2').text(`NO MATCH (${timeFormat((t1-t0)/1000)}s)`)
+          d3.select('.top').attr('opacity', 0)
+          d3.selectAll('.parameter-value path').attr('fill', 'white')
+      }
+      if (t1-t0 >= 5000) {
+          clearInterval(check4Match)
+          d3.select('.bottom').attr('pointer-events', 'none') // disable slider
+      }
   }, 200); // rate limit of 10 Hz
+
 
   </script>
 </body>
