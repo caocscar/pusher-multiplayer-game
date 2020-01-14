@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="Alex Cao">
-    <title>Player 1 - Pusher Test</title>
+    <title>Player 2 - Pusher Test</title>
     <script src="https://js.pusher.com/5.0/pusher.min.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://unpkg.com/d3-simple-slider"></script>
@@ -26,13 +26,11 @@
   //    forceTLS: true,
   });
   // subscribe to the my-channel channel
-  var channel = pusher.subscribe('private-Lily')
+  var channel = pusher.subscribe('private-Forrest');
   // bind a function the event name
-
-
-  //channel.bind('client-valueUpdate', function(data) {
-  //    d3.select('h2').text(data.value)
-  //});
+  channel.bind('client-updateValue', function(data) {
+      d3.select('h2').text(data.value)
+  });
 
   // https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
   let margin = {top: 20, right: 50, bottom: 20, left: 130},
@@ -144,14 +142,11 @@
       d3.selectAll('.parameter-value path').attr('fill', '#2719C7')
     } else {
       //d3.select('h2').text('NO MATCH')
-      channel.bind('pusher:subscription_succeeded', function() {
-          alert('subscription registered with private channel')
-          channel.trigger('client-updateValue', {'value': slider1.value()})
-      });
+      //channel.trigger('client-updateValue', {'value': slider1.value()})
       d3.select('.top').attr('opacity', 0)
       d3.selectAll('.parameter-value path').attr('fill', 'white')
     }
-  }, 200); // rate limit of 10 Hz
+  }, 500);
 
   </script>
 </body>
