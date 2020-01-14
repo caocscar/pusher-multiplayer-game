@@ -14,8 +14,13 @@ pusher = pusher.Pusher(
 name = ''
 
 @app.route('/')
+@app.route('/login')
 def index():
-    return render_template('index.html')
+    return render_template('login.html')
+
+@app.route('/bargaining')
+def index():
+    return render_template('bargaining.html')
 
 @app.route("/pusher/auth", methods=['POST'])
 def pusher_authentication():
