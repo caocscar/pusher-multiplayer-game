@@ -15,11 +15,11 @@ name = ''
 
 @app.route('/')
 @app.route('/login')
-def index():
+def login():
     return render_template('login.html')
 
 @app.route('/bargaining')
-def index():
+def bargaining():
     return render_template('bargaining.html')
 
 @app.route("/pusher/auth", methods=['POST'])
