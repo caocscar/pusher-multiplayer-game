@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="Alex Cao">
-    <title>Two-Player Bargaining Test</title>
-    <script src="https://js.pusher.com/5.0/pusher.min.js"></script>
-    <script src="https://d3js.org/d3.v5.min.js"></script>
-    <script src="https://unpkg.com/d3-simple-slider"></script>
-    <link rel="stylesheet" href="../static/css/index.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="Alex Cao">
+  <title>Two-Player Bargaining Test</title>
+  <script src="https://js.pusher.com/5.0/pusher.min.js"></script>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://unpkg.com/d3-simple-slider"></script>
+  <link rel="stylesheet" href="../static/css/index.css">
 </head>
 <body>
   <div class="container">
@@ -19,14 +19,17 @@
   <script>
 
   // open a connections to Channels
-  var pusher = new Pusher('9d5365f81a0e2a336b50', {
+  let pusher = new Pusher('9d5365f81a0e2a336b50', {
       authEndpoint: '/pusher/auth',
       cluster: 'us2',
   });
+  let url = new URL(window.location.href);
+  let name = url.searchParams.get("username");
+
   // subscribe to the my-channel channel
-  var channel = pusher.subscribe('private-Lily')
+  let channel = pusher.subscribe('private-' + name)
   channel.bind('pusher:subscription_succeeded', function() {
-      console.log('subscription registered with private channel')
+      console.log('subscription registered with PRIVATE channel')
   });
   // bind a function to event name
   channel.bind('client-updateValue', function(data) {
@@ -34,24 +37,30 @@
       slider2.silentValue(data.value)
   });
 
-  pusher.bind('client-' + this.username, (message) => {
+  let players = 0
+  let connectedPlayers = []
+  let presenceChannel = pusher.subscribe('presence-channel');
+  presenceChannel.bind('pusher:subscription_succeeded', function(d) {
+      console.log('subscription registered with PRESENCE channel')
+  });  
+  presenceChannel.bind('pusher:member_added', (p) => {
+      players++;
+      connectedPlayers.push(p.id)
+  });
+
+  pusher.bind('client-Lily', (message) => {
     if (confirm('Do you want to start a game with ' + message)) {
-        this.otherPlayerName = message
-        this.otherPlayerChannel = this.pusher.subscribe('private-' + this.otherPlayerName)
-
-        this.otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
-        this.otherPlayerChannel.trigger('client-game-started', this.username)
+        otherPlayerChannel = this.pusher.subscribe('private-' + message)
+        otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
+        otherPlayerChannel.trigger('client-game-started', this.username)
         })
-
-        this.startGame(message)
+        console.log('Start game with ' + message)
     } else {
         this.otherPlayerChannel = this.pusher.subscribe('private-' + message)
-
         this.otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
         this.otherPlayerChannel.trigger('client-game-declined', "")
         })
-
-        this.gameDeclined()
+        console.log('Decline game with ' + message)
     }
   })
 

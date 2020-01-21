@@ -91,11 +91,10 @@
       methods: {
         generateRandomName: function () {
           let text = '';
-          let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-          for (var i = 0; i < 6; i++) {
+          let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+          for (let i=0; i<6; i++) {
             text += possible.charAt(Math.floor(Math.random() * possible.length));
           }
-
           return text;
         },
 
@@ -143,22 +142,17 @@
           // ------------------------------------------------------------------------
           this.pusher.bind('client-' + this.username, (message) => {
             if (confirm('Do you want to start a game of Tic Tac Toe with ' + message)) {
-
               this.otherPlayerName = message
               this.otherPlayerChannel = this.pusher.subscribe('private-' + this.otherPlayerName)
-
               this.otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
                 this.otherPlayerChannel.trigger('client-game-started', this.username)
               })
-
               this.startGame(message)
             } else {
               this.otherPlayerChannel = this.pusher.subscribe('private-' + message)
-
               this.otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
                 this.otherPlayerChannel.trigger('client-game-declined', "")
               })
-
               this.gameDeclined()
             }
           })
@@ -212,7 +206,6 @@
         choosePlayer: function (e) {
           this.otherPlayerName = e.target.innerText
           this.otherPlayerChannel = this.pusher.subscribe('private-' + this.otherPlayerName)
-
           this.otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
             this.otherPlayerChannel.trigger('client-' + this.otherPlayerName, this.username)
           })
@@ -241,7 +234,7 @@
           this.restartGame()
         },
 
-        playerAction: function (e) {
+        playerAction: function(e) {
           let index = e.target.dataset.id - 1
           let tile = this.firstPlayer ? 'X' : 'O'
 
