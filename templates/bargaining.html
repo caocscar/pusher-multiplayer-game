@@ -34,6 +34,27 @@
       slider2.silentValue(data.value)
   });
 
+  pusher.bind('client-' + this.username, (message) => {
+    if (confirm('Do you want to start a game with ' + message)) {
+        this.otherPlayerName = message
+        this.otherPlayerChannel = this.pusher.subscribe('private-' + this.otherPlayerName)
+
+        this.otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
+        this.otherPlayerChannel.trigger('client-game-started', this.username)
+        })
+
+        this.startGame(message)
+    } else {
+        this.otherPlayerChannel = this.pusher.subscribe('private-' + message)
+
+        this.otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
+        this.otherPlayerChannel.trigger('client-game-declined', "")
+        })
+
+        this.gameDeclined()
+    }
+  })
+
   // https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
   let margin = {top: 20, right: 50, bottom: 20, left: 130},
       width = 500 - margin.left - margin.right,
