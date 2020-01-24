@@ -29,7 +29,7 @@
         methods: {
             login: function() {
                 let username = this.$refs.username.value
-                username = username.length == 0 ? username : 'Alex'
+                username = username.length > 0 ? username : 'Alex'
                 window.location.replace(`/bargaining?username=${username}`);
             }
         }
