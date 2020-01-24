@@ -20,6 +20,8 @@ def login():
 
 @app.route('/bargaining')
 def bargaining():
+    global name
+    name = request.args.get('username')
     return render_template('bargaining.html')
 
 @app.route("/pusher/auth", methods=['POST'])

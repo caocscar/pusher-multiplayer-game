@@ -27,7 +27,7 @@
   let name = url.searchParams.get("username");
 
   // subscribe to the my-channel channel
-  let channel = pusher.subscribe('private-' + name)
+  let channel = pusher.subscribe(`private-${name}`)
   channel.bind('pusher:subscription_succeeded', function() {
       console.log('subscription registered with PRIVATE channel')
   });
@@ -40,12 +40,16 @@
   let players = 0
   let connectedPlayers = []
   let presenceChannel = pusher.subscribe('presence-channel');
-  presenceChannel.bind('pusher:subscription_succeeded', function(d) {
+  presenceChannel.bind('pusher:subscription_succeeded', members => {
       console.log('subscription registered with PRESENCE channel')
-  });  
-  presenceChannel.bind('pusher:member_added', (p) => {
-      players++;
-      connectedPlayers.push(p.id)
+      players = members.count
+      members.each(member => { if (member.id != name) { connectedPlayers.push(member.id) } });
+  });
+  // when someone joins the presence channel
+  presenceChannel.bind('pusher:member_added', member => {
+      console.log('member added')
+      players = presenceChannel.members.count;
+      connectedPlayers.push(member.id)
   });
 
   pusher.bind('client-Lily', (message) => {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="Neo Ighodaro">
-    <title>TIC-TAC-TOE</title>
+    <title>Bargain Login</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
 </head>
 <body>
@@ -29,7 +29,7 @@
         methods: {
             login: function() {
                 let username = this.$refs.username.value
-                username = username ? username.length == 0 : 'Alex'
+                username = username.length == 0 ? username : 'Alex'
                 window.location.replace(`/bargaining?username=${username}`);
             }
         }
