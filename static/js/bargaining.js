@@ -16,9 +16,16 @@ channel.bind('client-updateValue', function(data) {
   d3.select('#value2').text(numFormat(data.value))
   slider2.silentValue(data.value)
 });
+// bind a function for messages
+channel.bind('client-messages', function(data) {
+  d3.select('#msg').text(data)
+})
+// bind a function for starting the game on ask side
+channel.bind('client-game-started', function(tf) {
+  if (tf) { playGame() }
+})
 
 let pl = d3.select('#playerlist')
-
 
 // page initialization
 let players = 0
@@ -63,20 +70,26 @@ function choosePlayer(opponent) {
   otherPlayerChannel = pusher.subscribe(`private-${opponent}`)
   otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
     otherPlayerChannel.trigger(`client-${opponent}`, name) // send message
-    console.log(`Asking game with ${name}`)
+    d3.select('#msg').text(`Asking for game with ${opponent}`)
+    console.log(`Asking for game with ${opponent}`)
   })
 }
 
 // listener for asking game with someone
-pusher.bind(`client-${name}`, member => {
-  otherPlayerChannel = pusher.subscribe(`private-${member}`)
+pusher.bind(`client-${name}`, opponent => {
+  otherPlayerChannel = pusher.subscribe(`private-${opponent}`)
   otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
-    if (confirm(`Do you want to start a game with ${member}`)) {
-      otherPlayerChannel.trigger('client-game-started', member)
-      console.log(`Start game with ${member}`)
+    if (confirm(`Do you want to start a game with ${opponent}`)) {
+      otherPlayerChannel.trigger('client-game-started', opponent)
+      d3.select('#msg').text(`Game started with ${opponent}`)
+      otherPlayerChannel.trigger('client-messages', `Game started with ${name}`)
+      playGame()  // start game on accept side
+      console.log(`Start game with ${opponent}`)
     } else {
       otherPlayerChannel.trigger('client-game-declined', "")
-      console.log(`Declined game with ${member}`)
+      d3.select('#msg').text(`Game declined with ${opponent}`)
+      otherPlayerChannel.trigger('client-messages', `Game declined with ${opponent}`)
+      console.log(`Declined game with ${opponent}`)
     }
   })
 })
@@ -184,45 +197,49 @@ d3.selectAll('.track-fill')
   .attr('stroke-width', h-2)
 
 // check for a match
-// let T = 10000
-// let msg
-// const t0 = new Date
-// let t1 = new Date
-// let flag = true
-// let history = [[slider1.value(), slider2.value()]]
-// let check4Match = setInterval(function() {
-//   channel.trigger('client-updateValue', {'value': slider1.value()})
-//   history.push([slider1.value(), slider2.value()])
-//   console.log(check4Match)
-//   if (slider1.value() == slider2.value()) {
-//       msg = 'PEEK-A-BOO'
-//       d3.select('.top').attr('opacity', 0.5)
-//       x2 = parseInt(d3.select('.track-fill').attr('x2'))
-//       d3.select('.top').attr('x', xoffset+x2)
-//       d3.selectAll('.parameter-value path').attr('fill', '#2719C7')
-//   } else {
-//       msg = 'NO MATCHES'
-//       d3.select('.top').attr('opacity', 0)
-//       d3.selectAll('.parameter-value path').attr('fill', 'white')
-//   }
-//   t1 = new Date
-//   d3.select('h2').text(`${msg} (${timeFormat((t1-t0)/1000)}s)`)
-//   if (t1-t0 >= T) {
-//       clearInterval(check4Match)
-//       check4Match = 0
-//       d3.select('.bottom').attr('pointer-events', 'none') // disable slider
-//   }
-//   if (flag & t1-t0 >= 2500) {
-//       d3.select('#s2').attr('opacity', 1)
-//       flag = !flag
-//   }
-// }, 200); // rate limit of 10 Hz
+function playGame() {
+  let T = 10000
+  let msg
+  const t0 = new Date
+  let t1 = new Date
+  let flag = true
+  let history = [[slider1.value(), slider2.value()]]
+  let check4Match = setInterval(function() {
+    channel.trigger('client-updateValue', {'value': slider1.value()})
+    history.push([slider1.value(), slider2.value()])
+    console.log(check4Match)
+    if (slider1.value() == slider2.value()) {
+        msg = 'PEEK-A-BOO'
+        d3.select('.top').attr('opacity', 0.5)
+        x2 = parseInt(d3.select('.track-fill').attr('x2'))
+        d3.select('.top').attr('x', xoffset+x2)
+        d3.selectAll('.parameter-value path').attr('fill', '#2719C7')
+    } else {
+        msg = 'NO MATCHES'
+        d3.select('.top').attr('opacity', 0)
+        d3.selectAll('.parameter-value path').attr('fill', 'white')
+    }
+    t1 = new Date
+    d3.select('h2').text(`${msg} (${timeFormat((t1-t0)/1000)}s)`)
+    if (t1-t0 >= T) {
+        clearInterval(check4Match)
+        check4Match = 0
+        d3.select('.bottom').attr('pointer-events', 'none') // disable slider
+    }
+    if (flag & t1-t0 >= 2500) {
+        d3.select('#s2').attr('opacity', 1)
+        flag = !flag
+    }
+  }, 200); // rate limit of 10 Hz (=== lower limit of 100)
 
-// // Set marker to last spot if mouse is held down after game is over
-// let postGame = setInterval(function() {
-//   if (t1-t0 >= T) {
-//       lastValue = history.slice(-1)[0]
-//       slider1.silentValue(lastValue[0])
-//       d3.select('#value1').text(numFormat(lastValue[0]))
-//   }
-// }, 1010)
+  // Set marker to last spot if mouse is held down after game is over
+  let postGame = setInterval(function() {
+    if (t1-t0 >= T) {
+        lastValue = history.slice(-1)[0]
+        slider1.silentValue(lastValue[0])
+        d3.select('#value1').text(numFormat(lastValue[0]))
+    }
+  }, 1010)
+
+}
+
