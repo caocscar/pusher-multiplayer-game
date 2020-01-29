@@ -1,97 +1,3 @@
-// open a connections to Channels
-let pusher = new Pusher('9d5365f81a0e2a336b50', {
-  authEndpoint: '/pusher/auth',
-  cluster: 'us2',
-});
-let url = new URL(window.location.href);
-let name = url.searchParams.get("username");
-
-// subscribe to the my-channel channel
-let channel = pusher.subscribe(`private-${name}`)
-channel.bind('pusher:subscription_succeeded', function() {
-  console.log('subscription registered with PRIVATE channel')
-});
-// bind a function to event name
-channel.bind('client-updateValue', data => {
-  d3.select('#value2').text(numFormat(data.value))
-  slider2.silentValue(data.value)
-});
-// bind a function for messages
-channel.bind('client-messages', data => {
-  d3.select('#msg').text(data)
-})
-// bind a function for starting the game on ask side
-channel.bind('client-game-started', () => playGame() )
-
-let pl = d3.select('#playerlist')
-
-// page initialization
-let players = 0
-let connectedPlayers = []
-let presenceChannel = pusher.subscribe('presence-channel');
-presenceChannel.bind('pusher:subscription_succeeded', members => {
-  console.log('subscription registered with PRESENCE channel')
-  players = members.count
-  members.each(member => { if (member.id != name) { connectedPlayers.push(member.id) } });
-  updatePlayers()
-});
-
-// when someone joins the presence channel
-presenceChannel.bind('pusher:member_added', member => {
-  console.log('member added')
-  players = presenceChannel.members.count;
-  connectedPlayers.push(member.id)
-  updatePlayers()
-});
-
-// when someone leaves the presence channel
-presenceChannel.bind('pusher:member_removed', member => {
-  console.log('member removed')
-  players = presenceChannel.members.count;
-  let idx = connectedPlayers.indexOf(member.id);
-  idx > -1 ? connectedPlayers.splice(idx,1) : null
-  updatePlayers()
-});
-
-// update list items
-function updatePlayers() {
-  pl.selectAll('li')
-    .data(connectedPlayers)
-    .join('li')
-      .attr('class', 'player')
-      .text(d => d)
-      .on('click', d => choosePlayer(d))
-}
-
-// initiatate game with someone
-function choosePlayer(opponent) {
-  oppChannel = pusher.subscribe(`private-${opponent}`)
-  oppChannel.bind('pusher:subscription_succeeded', () => {
-    oppChannel.trigger(`client-${opponent}`, name) // send message
-    d3.select('#msg').text(`Asking for game with ${opponent}`)
-    console.log(`Asking for game with ${opponent}`)
-  })
-}
-
-// listen on all channels for asking a game w/ someone
-pusher.bind(`client-${name}`, opponent => {
-  oppChannel = pusher.subscribe(`private-${opponent}`)
-  oppChannel.bind('pusher:subscription_succeeded', () => {
-    if (confirm(`Do you want to start a game with ${opponent}`)) {
-      oppChannel.trigger('client-game-started', opponent)
-      d3.select('#msg').text(`Game started with ${opponent}`)
-      oppChannel.trigger('client-messages', `Game started with ${name}`)
-      playGame()  // start game on accept side
-      console.log(`Start game with ${opponent}`)
-    } else {
-      oppChannel.trigger('client-game-declined', "")
-      d3.select('#msg').text(`Game declined with ${opponent}`)
-      oppChannel.trigger('client-messages', `Game declined with ${opponent}`)
-      console.log(`Declined game with ${opponent}`)
-    }
-  })
-})
-
 // https://bl.ocks.org/johnwalley/e1d256b81e51da68f7feb632a53c3518
 let margin = {top: 20, right: 50, bottom: 20, left: 130},
   width = 500 - margin.left - margin.right,
@@ -147,7 +53,7 @@ let slider2 = d3.sliderBottom(X)
 let P1 = d3.select('.background').append('svg')
   .attr("width", width + margin.left + margin.right)
   .attr("height", height + margin.top + margin.bottom)
-  .attr('class', 'bottom')
+  .attr('class', 'slider')
 .append("g")
   .attr("transform", `translate(${margin.left},${margin.top})`)
   .attr('id', 's1')
@@ -156,7 +62,7 @@ let P1 = d3.select('.background').append('svg')
 let P2 = d3.select('.background').append('svg')
   .attr("width", width + margin.left + margin.right)
   .attr("height", height + margin.top + margin.bottom)
-  .attr('class', 'bottom')
+  .attr('class', 'slider')
   .attr('pointer-events', 'none')
 .append("g")
   .attr("transform", `translate(${margin.left},${margin.top+height/2})`)
@@ -207,7 +113,7 @@ function playGame() {
   let check4Match = setInterval(function() {
     oppChannel.trigger('client-updateValue', {'value': slider1.value()})
     history.push([slider1.value(), slider2.value()])
-    if (hideOpp && slider1.value() == slider2.value()) {
+    if (!hideOpp && slider1.value() == slider2.value()) {
         msg = 'PEEK-A-BOO'
         x2 = parseInt(d3.select('.track-fill').attr('x2'))
         d3.select('.matching').attr('opacity', 0.5)
@@ -222,12 +128,13 @@ function playGame() {
     d3.select('h2').text(`${msg} (${timeFormat((t1-t0)/1000)}s)`)
     if (t1-t0 >= T) {
         clearInterval(check4Match)
-        d3.select('.bottom').attr('pointer-events', 'none') // disable slider
+        d3.selectAll('.slider').attr('pointer-events', 'none') // disable slider
+        oppChannel.trigger('client-messages', `Game FINISHED with ${name}`)
         //pusher.unsubscribe(oppChannel.name)
     }
     if (hideOpp && t1-t0 >= 2500) {
         d3.select('#s2').attr('opacity', 1)
-        hideOpp = !hideOpp
+        hideOpp = false
     }
   }, 200); // rate limit of 10 Hz (=== lower limit of 100)
 

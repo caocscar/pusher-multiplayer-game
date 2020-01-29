@@ -1,8 +1,8 @@
-.bottom {
+.slider {
     position: relative;
   }
   
-.top {
+.matching {
     position: absolute;
     fill: #2719C7;
     /* stroke: null; */
