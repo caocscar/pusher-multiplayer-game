@@ -12,18 +12,16 @@ channel.bind('pusher:subscription_succeeded', function() {
   console.log('subscription registered with PRIVATE channel')
 });
 // bind a function to event name
-channel.bind('client-updateValue', function(data) {
+channel.bind('client-updateValue', data => {
   d3.select('#value2').text(numFormat(data.value))
   slider2.silentValue(data.value)
 });
 // bind a function for messages
-channel.bind('client-messages', function(data) {
+channel.bind('client-messages', data => {
   d3.select('#msg').text(data)
 })
 // bind a function for starting the game on ask side
-channel.bind('client-game-started', function(tf) {
-  if (tf) { playGame() }
-})
+channel.bind('client-game-started', () => playGame() )
 
 let pl = d3.select('#playerlist')
 
@@ -67,28 +65,28 @@ function updatePlayers() {
 
 // initiatate game with someone
 function choosePlayer(opponent) {
-  otherPlayerChannel = pusher.subscribe(`private-${opponent}`)
-  otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
-    otherPlayerChannel.trigger(`client-${opponent}`, name) // send message
+  oppChannel = pusher.subscribe(`private-${opponent}`)
+  oppChannel.bind('pusher:subscription_succeeded', () => {
+    oppChannel.trigger(`client-${opponent}`, name) // send message
     d3.select('#msg').text(`Asking for game with ${opponent}`)
     console.log(`Asking for game with ${opponent}`)
   })
 }
 
-// listener for asking game with someone
+// listen on all channels for asking a game w/ someone
 pusher.bind(`client-${name}`, opponent => {
-  otherPlayerChannel = pusher.subscribe(`private-${opponent}`)
-  otherPlayerChannel.bind('pusher:subscription_succeeded', () => {
+  oppChannel = pusher.subscribe(`private-${opponent}`)
+  oppChannel.bind('pusher:subscription_succeeded', () => {
     if (confirm(`Do you want to start a game with ${opponent}`)) {
-      otherPlayerChannel.trigger('client-game-started', opponent)
+      oppChannel.trigger('client-game-started', opponent)
       d3.select('#msg').text(`Game started with ${opponent}`)
-      otherPlayerChannel.trigger('client-messages', `Game started with ${name}`)
+      oppChannel.trigger('client-messages', `Game started with ${name}`)
       playGame()  // start game on accept side
       console.log(`Start game with ${opponent}`)
     } else {
-      otherPlayerChannel.trigger('client-game-declined', "")
+      oppChannel.trigger('client-game-declined', "")
       d3.select('#msg').text(`Game declined with ${opponent}`)
-      otherPlayerChannel.trigger('client-messages', `Game declined with ${opponent}`)
+      oppChannel.trigger('client-messages', `Game declined with ${opponent}`)
       console.log(`Declined game with ${opponent}`)
     }
   })
@@ -105,13 +103,13 @@ const xoffset = 125,
   tickValues = [0, 2.5, 5],
   stepSize = 0.1;
 
-// rectangle
+// background
 let R = d3.select('.container').append('svg')
   .attr("width", width + margin.left + margin.right)
   .attr("height", height + margin.top + margin.bottom)
-  .attr('class', 'back')
-.append("rect")
-  .attr('class', 'top')
+  .attr('class', 'background')
+.append("rect") // vertical rectangle
+  .attr('class', 'matching')
   .attr("width", 10)
   .attr("height", 90)
   .attr('x', xoffset)
@@ -146,7 +144,7 @@ let slider2 = d3.sliderBottom(X)
   .fill('#31a354')
   .on('onchange', d => d3.select('#value2').text(numFormat(d)));
 
-let P1 = d3.select('.back').append('svg')
+let P1 = d3.select('.background').append('svg')
   .attr("width", width + margin.left + margin.right)
   .attr("height", height + margin.top + margin.bottom)
   .attr('class', 'bottom')
@@ -155,7 +153,7 @@ let P1 = d3.select('.back').append('svg')
   .attr('id', 's1')
   .call(slider1);
 
-let P2 = d3.select('.back').append('svg')
+let P2 = d3.select('.background').append('svg')
   .attr("width", width + margin.left + margin.right)
   .attr("height", height + margin.top + margin.bottom)
   .attr('class', 'bottom')
@@ -197,38 +195,39 @@ d3.selectAll('.track-fill')
   .attr('stroke-width', h-2)
 
 // check for a match
+let T = 10000
+let msg
+let hideOpp = true
+let history = [[slider1.value(), slider2.value()]]
+
 function playGame() {
-  let T = 10000
-  let msg
+
   const t0 = new Date
   let t1 = new Date
-  let flag = true
-  let history = [[slider1.value(), slider2.value()]]
   let check4Match = setInterval(function() {
-    channel.trigger('client-updateValue', {'value': slider1.value()})
+    oppChannel.trigger('client-updateValue', {'value': slider1.value()})
     history.push([slider1.value(), slider2.value()])
-    console.log(check4Match)
-    if (slider1.value() == slider2.value()) {
+    if (hideOpp && slider1.value() == slider2.value()) {
         msg = 'PEEK-A-BOO'
-        d3.select('.top').attr('opacity', 0.5)
         x2 = parseInt(d3.select('.track-fill').attr('x2'))
-        d3.select('.top').attr('x', xoffset+x2)
+        d3.select('.matching').attr('opacity', 0.5)
+            .attr('x', xoffset+x2)
         d3.selectAll('.parameter-value path').attr('fill', '#2719C7')
     } else {
         msg = 'NO MATCHES'
-        d3.select('.top').attr('opacity', 0)
+        d3.select('.matching').attr('opacity', 0)
         d3.selectAll('.parameter-value path').attr('fill', 'white')
     }
     t1 = new Date
     d3.select('h2').text(`${msg} (${timeFormat((t1-t0)/1000)}s)`)
     if (t1-t0 >= T) {
         clearInterval(check4Match)
-        check4Match = 0
         d3.select('.bottom').attr('pointer-events', 'none') // disable slider
+        //pusher.unsubscribe(oppChannel.name)
     }
-    if (flag & t1-t0 >= 2500) {
+    if (hideOpp && t1-t0 >= 2500) {
         d3.select('#s2').attr('opacity', 1)
-        flag = !flag
+        hideOpp = !hideOpp
     }
   }, 200); // rate limit of 10 Hz (=== lower limit of 100)
 
