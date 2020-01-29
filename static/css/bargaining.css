@@ -7,3 +7,13 @@
     fill: #2719C7;
     /* stroke: null; */
 }
+
+#playerlist li {
+  float: left;
+  list-style: none;
+  text-align: center;
+  background-color: #c6eb4394;
+  margin-right: 30px;
+  width: 150px;
+  line-height: 60px;
+}

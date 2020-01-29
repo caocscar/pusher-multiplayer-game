@@ -22,8 +22,12 @@ channel.bind('client-messages', data => {
 })
 // bind a function for starting the game on ask side
 channel.bind('client-game-started', () => playGame() )
+channel.bind('client-game-declined', channelName => {
+  d3.select('#msg').text(`${channelName.slice(8,)} declined game`)
+  pusher.unsubscribe(channelName)
+  console.log(`${channelName.slice(8,)} declined game`)
+})
 
-let pl = d3.select('#playerlist')
 
 // page initialization
 let players = 0
@@ -55,7 +59,8 @@ presenceChannel.bind('pusher:member_removed', member => {
 
 // update list items
 function updatePlayers() {
-  pl.selectAll('li')
+  d3.select('#playerlist')
+    .selectAll('li')
     .data(connectedPlayers)
     .join('li')
       .attr('class', 'player')
@@ -65,29 +70,42 @@ function updatePlayers() {
 
 // initiatate game with someone
 function choosePlayer(opponent) {
-  oppChannel = pusher.subscribe(`private-${opponent}`)
+  let channelName = `private-${opponent}`
+  if (pusher.channels.hasOwnProperty(channelName)) {
+    ask4Game(opponent)
+  }
+  oppChannel = pusher.subscribe(channelName)
   oppChannel.bind('pusher:subscription_succeeded', () => {
     oppChannel.trigger(`client-${opponent}`, name) // send message
     d3.select('#msg').text(`Asking for game with ${opponent}`)
     console.log(`Asking for game with ${opponent}`)
   })
+  oppChannel.bind('pusher:subscription_error', function(status) {
+    console.log(status)
+  })
+}
+
+function ask4Game(opponent) {
+  if (confirm(`Do you want to start a game with ${opponent}`)) {
+    oppChannel.trigger('client-game-started', opponent)
+    d3.select('#msg').text(`Game started with ${opponent}`)
+    oppChannel.trigger('client-messages', `Game started with ${name}`)
+    playGame()  // start game on accept side
+    console.log(`Start game with ${opponent}`)
+  } else {
+    d3.select('#msg').text(`Game declined with ${opponent}`)
+    console.log(`Declined game with ${opponent}`)
+    oppChannel.trigger('client-game-declined', `private-${name}`)
+  }
 }
 
 // listen on all channels for asking a game w/ someone
 pusher.bind(`client-${name}`, opponent => {
   oppChannel = pusher.subscribe(`private-${opponent}`)
   oppChannel.bind('pusher:subscription_succeeded', () => {
-    if (confirm(`Do you want to start a game with ${opponent}`)) {
-      oppChannel.trigger('client-game-started', opponent)
-      d3.select('#msg').text(`Game started with ${opponent}`)
-      oppChannel.trigger('client-messages', `Game started with ${name}`)
-      playGame()  // start game on accept side
-      console.log(`Start game with ${opponent}`)
-    } else {
-      oppChannel.trigger('client-game-declined', "")
-      d3.select('#msg').text(`Game declined with ${opponent}`)
-      oppChannel.trigger('client-messages', `Game declined with ${opponent}`)
-      console.log(`Declined game with ${opponent}`)
-    }
+    ask4Game(opponent)
+  })
+  oppChannel.bind('pusher:subscription_error', function(status) {
+    console.log(status)
   })
 })

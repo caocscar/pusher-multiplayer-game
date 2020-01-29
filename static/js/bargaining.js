@@ -54,6 +54,7 @@ let P1 = d3.select('.background').append('svg')
   .attr("width", width + margin.left + margin.right)
   .attr("height", height + margin.top + margin.bottom)
   .attr('class', 'slider')
+  .attr('pointer-events', 'none')
 .append("g")
   .attr("transform", `translate(${margin.left},${margin.top})`)
   .attr('id', 's1')
@@ -101,14 +102,22 @@ d3.selectAll('.track-fill')
   .attr('stroke-width', h-2)
 
 // check for a match
-let T = 10000
-let msg
-let hideOpp = true
-let history = [[slider1.value(), slider2.value()]]
+let msg,
+    hideOpp,
+    T = 10000,
+    history = [[slider1.value(), slider2.value()]]
+
+function resetGame() {
+  d3.selectAll('.slider').attr('pointer-events', 'auto') // enable slider
+  d3.select('#s2').attr('opacity', 0) // make opponent slider invisible
+  d3.select('.matching').attr('opacity', 0) // make matching rectangle invisible
+  hideOpp = true // set flag
+}
 
 function playGame() {
 
-  const t0 = new Date
+  resetGame()
+  let t0 = new Date
   let t1 = new Date
   let check4Match = setInterval(function() {
     oppChannel.trigger('client-updateValue', {'value': slider1.value()})
@@ -130,7 +139,7 @@ function playGame() {
         clearInterval(check4Match)
         d3.selectAll('.slider').attr('pointer-events', 'none') // disable slider
         oppChannel.trigger('client-messages', `Game FINISHED with ${name}`)
-        //pusher.unsubscribe(oppChannel.name)
+        pusher.unsubscribe(oppChannel.name)
     }
     if (hideOpp && t1-t0 >= 2500) {
         d3.select('#s2').attr('opacity', 1)
