@@ -22,10 +22,11 @@ channel.bind('client-messages', data => {
 })
 // bind a function for starting the game on ask side
 channel.bind('client-game-started', () => playGame() )
-channel.bind('client-game-declined', channelName => {
-  d3.select('#msg').text(`${channelName.slice(8,)} declined game`)
-  pusher.unsubscribe(channelName)
-  console.log(`${channelName.slice(8,)} declined game`)
+// executes when ask side gets a decline
+channel.bind('client-game-declined', msg => {
+  d3.select('#msg').text(msg)
+  console.log(`${oppChannel.name} declined game`)
+  pusher.unsubscribe(oppChannel.name)
 })
 
 
@@ -95,7 +96,8 @@ function ask4Game(opponent) {
   } else {
     d3.select('#msg').text(`Game declined with ${opponent}`)
     console.log(`Declined game with ${opponent}`)
-    oppChannel.trigger('client-game-declined', `private-${name}`)
+    oppChannel.trigger('client-game-declined', `${name} declined game`)
+    pusher.unsubscribe(oppChannel.name)
   }
 }
 
