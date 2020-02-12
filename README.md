@@ -1,4 +1,4 @@
-# Flask + Pusher + Vue.js = Multi-Player Game 
+# Flask + Pusher + D3.js + Vue.js = Multi-Player Game 
 
 ## Instructions
 1. Change directory to folder containing `app.py`
